@@ -19,7 +19,7 @@ wanted_classes = ["ship"]
 vid_root = args.root
 # sampling_sec = 1 # save one frame every <sampling> seconds.
 sampling_sec = float(args.sample) # save one frame every <sampling> seconds.
-out_dir = '/media/dh/HDD1/pp/Labrador200/dh_format'
+out_dir = args.out
 
 doc = xml.dom.minidom.parse(xml_file)
 
