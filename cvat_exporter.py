@@ -2,14 +2,8 @@ import shutil
 from PIL import Image
 from pathlib import Path
 
-class CVAT_exporter(object):
-    def __init__(self, upload_format='yolo', out_dir=None):
-        self.format = upload_format
-        if self.format == 'yolo':
-            self.write = self.write_yolo
-            self.end = self.end_yolo
-        else:
-            assert True,'Sorry currently only yolo is supported'
+class YOLO_exporter(object):
+    def __init__(self, out_dir=None):
         self.out_dir_path = Path(out_dir) 
         self.out_dir_path.mkdir(exist_ok=True, parents=True)
         self.classes = []
@@ -17,7 +11,7 @@ class CVAT_exporter(object):
         self.cvat_arbitary_dir_name = 'obj_train_data'
         (self.out_dir_path/self.cvat_arbitary_dir_name).mkdir(exist_ok=True, parents=True) 
 
-    def write_yolo(self, impath, preds):
+    def write(self, impath, preds):
         im = Image.open(impath)
         iw, ih = im.size
 
@@ -48,7 +42,7 @@ class CVAT_exporter(object):
                 f.write(write_str)
                 # print(write_str)
 
-    def end_yolo(self):
+    def end(self):
         with (self.out_dir_path/'obj.data').open(mode='w') as f:
             f.write('classes = {}\n'.format(len(self.classes)))
             f.write('train = data/train.txt\n')
@@ -65,4 +59,4 @@ class CVAT_exporter(object):
                 f.write(str(fake_path)+'\n')
 
         print('Zipping up..')
-        shutil.make_archive(str(self.out_dir_path),'zip',str(self.out_dir_path))`
+        shutil.make_archive(str(self.out_dir_path),'zip',str(self.out_dir_path))

@@ -3,7 +3,7 @@ import argparse
 from tqdm import tqdm
 from pathlib import Path
 from keras_yolo3.yolo import YOLO
-from cvat_exporter import CVAT_exporter
+from cvat_exporter import YOLO_exporter
 
 IMG_EXTS = ['.png','.jpg','.jpeg']
 
@@ -41,7 +41,7 @@ od = YOLO(
 )
 print('YOLO inited.')
 
-exporter = CVAT_exporter(upload_format='yolo', out_dir=str(img_dir_path)+'_preds')
+exporter = YOLO_exporter(out_dir=str(img_dir_path)+'_preds')
 
 # for impath in img_dir_path.glob('**/*'):
 for impath in tqdm(list(img_dir_path.glob('**/*'))):
