@@ -3,7 +3,10 @@ import cv2
 import xml.dom.minidom
 import argparse
 
+from pathlib import Path
 from collections import defaultdict
+
+VID_EXTS = ('.mp4', '.avi')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--xml', type=str, required=True, help='Path to XML file')
@@ -45,15 +48,21 @@ for track in doc.getElementsByTagName("track"):
         continue
     track_id = int(track.getAttribute("id"))
     for box in track.getElementsByTagName("box"):
+        outside = bool(int(box.getAttribute("outside")))
+        if outside:
+            continue
         frame = int(box.getAttribute("frame"))
-        keyframe = bool(box.getAttribute("keyframe"))
+        keyframe = bool(int(box.getAttribute("keyframe")))
         xtl = float(box.getAttribute("xtl"))
         ytl = float(box.getAttribute("ytl"))
         xbr = float(box.getAttribute("xbr"))
         ybr = float(box.getAttribute("ybr"))
         annot_dict[frame].append([xtl, ytl, xbr, ybr, class_idx, track_id])
-
-vid_path = os.path.join(vid_root, source_vid)
+for vp in Path(vid_root).glob('*'):
+    if vp.name.endswith(VID_EXTS):
+        if vid_name in vp.name:
+            vid_path = str(vp)
+# vid_path = os.path.join(vid_root, source_vid)
 cap = cv2.VideoCapture(vid_path)
 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 print('Total frames: {}'.format(total_frames))
