@@ -53,7 +53,34 @@ for image in doc.getElementsByTagName("image"):
     name = image.getAttribute("name")
     stem = Path(name).stem
     stem = stem.replace(' ','-')
-    imgstem2xmlboxes[stem] = image.getElementsByTagName("box")
+
+    boxes = []
+
+    for box in image.getElementsByTagName("box"):
+        label = box.getAttribute("label")
+        l = int(float(box.getAttribute("xtl")))
+        t = int(float(box.getAttribute("ytl")))
+        r = int(float(box.getAttribute("xbr")))
+        b = int(float(box.getAttribute("ybr")))
+        boxes.append([l,t,r,b], label)
+
+    for polygon in image.getElementsByTagName("polygon"):
+        points_str = polygon.getAttribute("points")
+        points = []
+        for pairs in points_str.split(';'):
+            x, y = pairs.split(',')
+            points.append((int(float(x)), int(float(y))))
+
+        if len(points) > 0:
+            x_min = min(points, key= lambda t: t[0])[0]
+            x_max = max(points, key= lambda t: t[0])[0]
+            y_min = min(points, key= lambda t: t[1])[1]
+            y_max = max(points, key= lambda t: t[1])[1]
+            bb = [x_min, y_min, x_max, y_max]
+            label = polygon.getAttribute("label")
+            boxes.append((bb, label))
+
+    imgstem2xmlboxes[stem] = boxes
 
 ignore_count = 0
 for impath in tqdm(Path(img_root).rglob('*')):
@@ -68,7 +95,8 @@ for impath in tqdm(Path(img_root).rglob('*')):
 
     if stem in imgstem2xmlboxes:
         for box in imgstem2xmlboxes[stem]:
-            label = box.getAttribute("label")
+            ltrb, label = box
+            # label = box.getAttribute("label")
             if label == ignore_frame_str:
                 ignore = True
                 ignore_count += 1
@@ -78,11 +106,12 @@ for impath in tqdm(Path(img_root).rglob('*')):
                 print('[WARNING] LABEL {} IS NOT FOUND IN CLASSES_MAP'.format(label))
                 continue
             cid = classes_map[label]
-            l = float(box.getAttribute("xtl"))
-            t = float(box.getAttribute("ytl"))
-            r = float(box.getAttribute("xbr"))
-            b = float(box.getAttribute("ybr"))
-            l,t,r,b = [int(x) for x in [l,t,r,b]]
+            l,t,r,b = ltrb
+            # l = float(box.getAttribute("xtl"))
+            # t = float(box.getAttribute("ytl"))
+            # r = float(box.getAttribute("xbr"))
+            # b = float(box.getAttribute("ybr"))
+            # l,t,r,b = [int(x) for x in [l,t,r,b]]
             cv2.rectangle(viz_frame, (l,t), (r,b), (100,255,0), 2)
             cv2.putText(viz_frame, '{}'.format(target_class[cid]), (l+5, b-10), cv2.FONT_HERSHEY_DUPLEX, 1.0, (100,255,0), 1)
             annot_det_segs.append(" {},{},{},{},{}".format(l,t,r,b,cid))
