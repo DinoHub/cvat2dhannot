@@ -1,0 +1,1 @@
+python3 yolo_crop.py /media/dh/HDD/pp/someShips --thresh 0.3 --buffer 0.2
