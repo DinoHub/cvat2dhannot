@@ -29,7 +29,7 @@ info_dict = {
     "contributor": "DH",
     "date_created": day
 }
-pprint(info_dict)
+# pprint(info_dict)
 
 '''
 license{
@@ -42,7 +42,7 @@ licenses = [{
     "name": 'No License',
     "url": ""
 }]
-pprint(licenses)
+# pprint(licenses)
 
 '''
 categories[{
