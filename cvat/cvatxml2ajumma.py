@@ -8,13 +8,30 @@ from pathlib import Path
 from collections import defaultdict
 
 VID_EXTS = ('.mp4', '.avi')
+IMG_EXTS = ['.jpg','.jpeg','.png','.tiff','.bmp']
+IMG_EXTS = [ str.casefold(x) for x in IMG_EXTS ] 
+print(IMG_EXTS)
+
+'''
+README for AJUMMA post processing
+
+Naming convention for visualised images: <original image name>_ltrb<box info>.jpg
+
+Note that the box ltrb in the name is the original box annotated, while the visualised box on the visualised image has a buffer around it. 
+
+'''
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--xml', type=str, required=True, help='Path to XML file (CVAT IMAGES)')
 parser.add_argument('--root', type=str, required=True, help='Path to folder containing images')
 parser.add_argument('--out', type=str, required=True, help='Path to folder to output to')
-parser.add_argument('--img_ext', type=str, default='png', help='image extension')
+# parser.add_argument('--img_ext', type=str, default='png', help='image extension')
 args = parser.parse_args()
+
+box_color = (100,255,0)
+box_thickness = 1
+# buffer = 0.1
+buffer_px = 3
 
 xml_file = args.xml
 ignore_frame_str = 'ignore'
@@ -48,11 +65,11 @@ for image in doc.getElementsByTagName("image"):
 ignore_count = 0
 image_count = 0
 chip_count = 0
-for impath in tqdm(list(Path(img_root).glob('*.{}'.format(args.img_ext)))):
+for impath in tqdm( [ p for p in Path(img_root).glob('*') if str.casefold(p.suffix) in IMG_EXTS ] ):
     ignore = False
     imstem = impath.stem
     img = cv2.imread(str(impath))
-
+    ih, iw = img.shape[:2]
     viz_frames = []
     if imstem in imgstem2xmlboxes:
         ship_idx = 1
@@ -67,12 +84,18 @@ for impath in tqdm(list(Path(img_root).glob('*.{}'.format(args.img_ext)))):
                 print('[WARNING] LABEL {} IS NOT FOUND IN CLASSES_MAP'.format(label))
                 continue
             cid = classes_map[label]
-            l = float(box.getAttribute("xtl"))
+            l = float(box.getAttribute("xtl")) 
             t = float(box.getAttribute("ytl"))
             r = float(box.getAttribute("xbr"))
-            b = float(box.getAttribute("ybr"))
-            l,t,r,b = [int(x) for x in [l,t,r,b]]
-            cv2.rectangle(viz_frame, (l,t), (r,b), (100,255,0), 2)
+            b = float(box.getAttribute("ybr")) 
+            
+            # buffer_px = buffer * ( r - l )
+            box_l = int(max(0, l - buffer_px))
+            box_t = int(max(0, t - buffer_px))
+            box_r = int(min(iw-1, r + buffer_px))
+            box_b = int(min(ih-1, b + buffer_px))
+
+            cv2.rectangle(viz_frame, (box_l,box_t), (box_r,box_b), box_color, box_thickness)
             # cv2.putText(viz_frame, '{}'.format(target_class[cid]), (l+5, b-10), cv2.FONT_HERSHEY_DUPLEX, 1.0, (100,255,0), 1)
             viz_frames.append((viz_frame, imstem, [l,t,r,b]))            
     if ignore:
@@ -83,7 +106,8 @@ for impath in tqdm(list(Path(img_root).glob('*.{}'.format(args.img_ext)))):
             frm, imstem, ltrb = frameltrb
             l,t,r,b = ltrb
             imstem = imstem.replace(':','-')
-            cv2.imwrite(os.path.join(viz_out_dir, '{}_ship{}_ltrb{},{},{},{}.jpg'.format(imstem, ship_idx, l, t, r, b)), frm)
+            img_path = viz_out_dir / '{}_ship{}_ltrb{},{},{},{}.jpg'.format(imstem, ship_idx, l, t, r, b)
+            cv2.imwrite( str(img_path), frm )
             chip_count += 1
     
     # annot_det_write.write("{}.png".format(stem))
